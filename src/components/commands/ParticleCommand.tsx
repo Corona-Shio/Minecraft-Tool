@@ -87,22 +87,22 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
                 className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
               />
             ) : (
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="フィルター"
-                    className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-                  />
+              <div className="flex gap-2 w-full">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter"
+                  className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
                   <select
                     value={particle}
                     onChange={(e) => setParticle(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
+                    className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 truncate min-h-[42px]"
                   >
                     {filteredParticles.map((p) => (
-                      <option key={p.id} value={p.id}>
+                      <option key={p.id} value={p.id} className="truncate">
                         {p.name} ({p.id.replace('minecraft:', '')})
                       </option>
                     ))}

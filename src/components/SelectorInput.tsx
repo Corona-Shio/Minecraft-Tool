@@ -94,27 +94,31 @@ const SelectorInput: React.FC<SelectorInputProps> = ({
               ))}
             </select>
           </div>
-          
+                    
           <div className="space-y-1">
-            <label className="text-xs text-stone-300 font-medium">Name</label>
+            <label className="text-xs text-stone-300 font-medium">Tag</label>
             <input
               type="text"
-              value={options.name || ''}
-              onChange={(e) => handleOptionChange('name', e.target.value)}
-              placeholder="Entity name"
+              value={options.tag || ''}
+              onChange={(e) => handleOptionChange('tag', e.target.value)}
+              placeholder="Entity tag"
               className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
             />
           </div>
-          
+                    
           <div className="space-y-1">
-            <label className="text-xs text-stone-300 font-medium">Distance</label>
-            <input
-              type="text"
-              value={options.distance || ''}
-              onChange={(e) => handleOptionChange('distance', e.target.value)}
-              placeholder="e.g. ..10 or 3..5"
+            <label className="text-xs text-stone-300 font-medium">Sort</label>
+            <select
+              value={options.sort || ''}
+              onChange={(e) => handleOptionChange('sort', e.target.value)}
               className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-            />
+            >
+              <option value="">Default</option>
+              <option value="nearest">Nearest</option>
+              <option value="furthest">Furthest</option>
+              <option value="random">Random</option>
+              <option value="arbitrary">Arbitrary</option>
+            </select>
           </div>
           
           <div className="space-y-1">
@@ -130,30 +134,27 @@ const SelectorInput: React.FC<SelectorInputProps> = ({
           </div>
           
           <div className="space-y-1">
-            <label className="text-xs text-stone-300 font-medium">Tag</label>
+            <label className="text-xs text-stone-300 font-medium">Distance</label>
             <input
               type="text"
-              value={options.tag || ''}
-              onChange={(e) => handleOptionChange('tag', e.target.value)}
-              placeholder="Entity tag"
+              value={options.distance || ''}
+              onChange={(e) => handleOptionChange('distance', e.target.value)}
+              placeholder="e.g. ..10 or 3..5"
               className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
             />
           </div>
-          
+
           <div className="space-y-1">
-            <label className="text-xs text-stone-300 font-medium">Sort</label>
-            <select
-              value={options.sort || ''}
-              onChange={(e) => handleOptionChange('sort', e.target.value)}
+            <label className="text-xs text-stone-300 font-medium">Name</label>
+            <input
+              type="text"
+              value={options.name || ''}
+              onChange={(e) => handleOptionChange('name', e.target.value)}
+              placeholder="Entity name"
               className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-            >
-              <option value="">Default</option>
-              <option value="nearest">Nearest</option>
-              <option value="furthest">Furthest</option>
-              <option value="random">Random</option>
-              <option value="arbitrary">Arbitrary</option>
-            </select>
+            />
           </div>
+
         </div>
       )}
     </div>

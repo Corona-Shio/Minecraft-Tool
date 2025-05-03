@@ -9,11 +9,36 @@ interface GiveCommandProps {
 
 const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
   const [target, setTarget] = useState('@p');
-  const [item, setItem] = useState(commonItems[0]);
+  const [item, setItem] = useState(commonItems[0].id);
   const [count, setCount] = useState(1);
   const [nbt, setNbt] = useState('');
   const [customItem, setCustomItem] = useState('');
   const [isCustomItem, setIsCustomItem] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredItems = commonItems.filter(item => {
+    const searchLower = searchTerm.toLowerCase();
+    return item.name.toLowerCase().includes(searchLower) || 
+           item.id.toLowerCase().includes(searchLower);
+  }).sort((a, b) => {
+    const searchLower = searchTerm.toLowerCase();
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+    const aId = a.id.toLowerCase();
+    const bId = b.id.toLowerCase();
+
+    // 前方一致を優先
+    const aStartsWith = aName.startsWith(searchLower) || aId.startsWith(searchLower);
+    const bStartsWith = bName.startsWith(searchLower) || bId.startsWith(searchLower);
+
+    if (aStartsWith && !bStartsWith) return -1;
+    if (!aStartsWith && bStartsWith) return 1;
+
+    // 前方一致以外は元の順序を維持
+    const aIndex = commonItems.findIndex(item => item.id === a.id);
+    const bIndex = commonItems.findIndex(item => item.id === b.id);
+    return aIndex - bIndex;
+  });
 
   useEffect(() => {
     const selectedItem = isCustomItem ? customItem : item;
@@ -37,7 +62,7 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
           Item
         </label>
         <div className="flex gap-2 items-start">
-          <div className="flex-1">
+          <div className="flex-1 space-y-2">
             {isCustomItem ? (
               <input
                 type="text"
@@ -47,17 +72,28 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
                 className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
               />
             ) : (
-              <select
-                value={item}
-                onChange={(e) => setItem(e.target.value)}
-                className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-              >
-                {commonItems.map((i) => (
-                  <option key={i} value={i}>
-                    {i.replace('minecraft:', '')}
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-2 w-full">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Filter"
+                  className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <select
+                    value={item}
+                    onChange={(e) => setItem(e.target.value)}
+                    className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 truncate min-h-[42px]"
+                  >
+                    {filteredItems.map((item) => (
+                      <option key={item.id} value={item.id} className="truncate">
+                        {item.name} ({item.id.replace('minecraft:', '')})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             )}
           </div>
           <button

@@ -238,6 +238,9 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
       </div>
 
       <div className="space-y-2">
+        <label className="text-sm font-medium text-stone-300">
+          Viewers
+        </label>
         <div className="flex items-center space-x-2 px-3 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded border border-stone-600 transition-colors">
           <input
             type="checkbox"

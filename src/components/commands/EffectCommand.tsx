@@ -16,12 +16,23 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
   const [hideParticles, setHideParticles] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredEffects = effectTypes.filter(effect => {
+  // Filter available effects based on the search query
+  const filteredEffects = effectTypes.filter(effectItem => {
     const searchLower = searchQuery.toLowerCase();
-    return effect.name.toLowerCase().includes(searchLower) || 
-           effect.id.toLowerCase().includes(searchLower);
+    return (
+      effectItem.name.toLowerCase().includes(searchLower) ||
+      effectItem.id.toLowerCase().includes(searchLower)
+    );
   });
 
+  // When the filter input changes, reset the selected effect to the first matching option
+  useEffect(() => {
+    if (filteredEffects.length > 0) {
+      setEffect(filteredEffects[0].id);
+    }
+  }, [searchQuery]);
+
+  // Generate and propagate the command whenever relevant state changes
   useEffect(() => {
     if (action === 'clear') {
       const command = generateEffectCommand('clear', target, effect);
@@ -31,11 +42,11 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
 
     if (effect) {
       const command = generateEffectCommand(
-        'give', 
-        target, 
-        effect, 
-        duration, 
-        amplifier, 
+        'give',
+        target,
+        effect,
+        duration,
+        amplifier,
         hideParticles
       );
       onCommandChange(command);
@@ -44,6 +55,7 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
 
   return (
     <div className="space-y-4">
+      {/* Action selection */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-stone-300">
           Action
@@ -70,6 +82,7 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
         </div>
       </div>
 
+      {/* Target selector */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-stone-300">
           Target
@@ -77,34 +90,34 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
         <SelectorInput value={target} onChange={setTarget} />
       </div>
 
+      {/* Effect filter and dropdown */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-stone-300">
           Effect
         </label>
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter"
-              className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-            />
-            <select
-              value={effect}
-              onChange={(e) => setEffect(e.target.value)}
-              className="flex-1 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-            >
-              {filteredEffects.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name} ({e.id.replace('minecraft:', '')})
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Filter"
+            className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
+          />
+          <select
+            value={effect}
+            onChange={(e) => setEffect(e.target.value)}
+            className="flex-1 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
+          >
+            {filteredEffects.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name} ({e.id.replace('minecraft:', '')})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
+      {/* Additional options for 'give' action */}
       {action === 'give' && (
         <>
           <div className="space-y-2">

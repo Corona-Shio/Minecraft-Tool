@@ -1,4 +1,4 @@
-export type MinecraftSelector = '@p' | '@a' | '@r' | '@e' | '@s' | string;
+export type MinecraftSelector = '@p' | '@a' | '@e' | '@s' | '@r' | string;
 
 export type SelectorOptions = {
   type?: string;
@@ -23,7 +23,8 @@ export type CommandType =
   | 'setblock' 
   | 'particle' 
   | 'execute' 
-  | 'fill';
+  | 'fill'
+  | 'skin';
 
 export interface CommandOption {
   name: string;

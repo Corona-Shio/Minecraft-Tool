@@ -1,6 +1,57 @@
 import { CommandOption } from '../types/commandTypes';
 
+export const SKIN_IP_ADDRESS = import.meta.env.VITE_SKIN_IP
+
+export const characterList = [
+  {
+    id: "aoi", 
+    name: "アオイ"
+  },
+  {
+    id: "hiro", 
+    name: "ヒロ"
+  },
+  {
+    id: "tokotan", 
+    name: "トコたん"
+  },
+  {
+    id: "haha", 
+    name: "ヒロ母"
+  },
+  {
+    id: "desuo", 
+    name: "デス夫"
+  },
+  {
+    id: "hakase", 
+    name: "都市伝説博士"
+  },
+  {
+    id: "hiro_awake", 
+    name: "ヒロ超人解放"
+  },
+  {
+    id: "hiro_poppo", 
+    name: "ヒロぽっぽー"
+  },
+  {
+    id: "shigeo", 
+    name: "しげお"
+  },
+  {
+    id: "umao", 
+    name: "ウマオ"
+  },
+];
+
 export const commandOptions: CommandOption[] = [
+  {
+    name: 'Skin',
+    value: 'skin',
+    description: 'Change player skin',
+    icon: 'User'
+  },
   {
     name: 'Effect',
     value: 'effect',
@@ -48,10 +99,10 @@ export const commandOptions: CommandOption[] = [
     value: 'fill',
     description: 'Fill an area with blocks',
     icon: 'Boxes'
-  }
+  },
 ];
 
-export const selectorTypes = ['@p', '@a', '@r', '@e', '@s'];
+export const selectorTypes = ['@p', '@a', '@e', '@s', '@r'];
 
 export const entityTypes = [
   'allay',

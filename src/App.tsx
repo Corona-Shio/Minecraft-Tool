@@ -9,6 +9,7 @@ import SetBlockCommand from './components/commands/SetBlockCommand';
 import ParticleCommand from './components/commands/ParticleCommand';
 import ExecuteCommand from './components/commands/ExecuteCommand';
 import FillCommand from './components/commands/FillCommand';
+import SkinCommand from './components/commands/SkinCommand';
 import CommandOutput from './components/CommandOutput';
 import CommandHistory from './components/CommandHistory';
 
@@ -21,7 +22,7 @@ interface CommandHistory {
 }
 
 const App: React.FC = () => {
-  const [commandType, setCommandType] = useState<CommandType>('give');
+  const [commandType, setCommandType] = useState<CommandType>('skin');
   const [command, setCommand] = useState('');
   const [history, setHistory] = useState<CommandHistory[]>([]);
   const [activeTab, setActiveTab] = useState<'form' | 'history'>('form');
@@ -94,6 +95,8 @@ const App: React.FC = () => {
         return <ExecuteCommand onCommandChange={handleCommandChange} />;
       case 'fill':
         return <FillCommand onCommandChange={handleCommandChange} />;
+      case 'skin':
+        return <SkinCommand onCommandChange={handleCommandChange} />;
       default:
         return <div>Select a command type</div>;
     }

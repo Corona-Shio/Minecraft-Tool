@@ -2,13 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'Minecraft';
-  src: url('https://fonts.cdnfonts.com/s/37276/MinecraftTen-VGORe.woff') format('woff');
-  font-weight: normal;
-  font-style: normal;
-}
-
 .font-minecraft {
   font-family: 'Minecraft', monospace;
   letter-spacing: 0.05em;

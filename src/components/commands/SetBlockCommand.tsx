@@ -17,7 +17,7 @@ const SetBlockCommand: React.FC<SetBlockCommandProps> = ({ onCommandChange }) =>
   const [isCustomBlock, setIsCustomBlock] = useState(false);
 
   useEffect(() => {
-    const selectedBlock = isCustomBlock ? customBlock : block;
+    const selectedBlock = isCustomBlock ? customBlock : block.id;
     if (selectedBlock) {
       const command = generateSetBlockCommand(position, selectedBlock, state, nbt);
       onCommandChange(command);
@@ -48,13 +48,18 @@ const SetBlockCommand: React.FC<SetBlockCommandProps> = ({ onCommandChange }) =>
               />
             ) : (
               <select
-                value={block}
-                onChange={(e) => setBlock(e.target.value)}
+                value={block.id}
+                onChange={(e) => {
+                  const selectedItem = commonItems.find(item => item.id === e.target.value);
+                  if (selectedItem) {
+                    setBlock(selectedItem);
+                  }
+                }}
                 className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
               >
-                {commonItems.map((i) => (
-                  <option key={i} value={i}>
-                    {i.replace('minecraft:', '')}
+                {commonItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
                   </option>
                 ))}
               </select>

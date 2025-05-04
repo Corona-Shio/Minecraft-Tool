@@ -11,7 +11,7 @@ interface FillCommandProps {
 const FillCommand: React.FC<FillCommandProps> = ({ onCommandChange }) => {
   const [from, setFrom] = useState<Position>({ x: '~', y: '~', z: '~' });
   const [to, setTo] = useState<Position>({ x: '~10', y: '~10', z: '~10' });
-  const [block, setBlock] = useState(commonItems[0]);
+  const [block, setBlock] = useState(commonItems[0].id);
   const [mode, setMode] = useState('replace');
   const [filter, setFilter] = useState('');
   const [customBlock, setCustomBlock] = useState('');
@@ -63,9 +63,9 @@ const FillCommand: React.FC<FillCommandProps> = ({ onCommandChange }) => {
                 onChange={(e) => setBlock(e.target.value)}
                 className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
               >
-                {commonItems.map((i) => (
-                  <option key={i} value={i}>
-                    {i.replace('minecraft:', '')}
+                {commonItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
                   </option>
                 ))}
               </select>
@@ -120,9 +120,9 @@ const FillCommand: React.FC<FillCommandProps> = ({ onCommandChange }) => {
                   className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
                 >
                   <option value="">No filter</option>
-                  {commonItems.map((i) => (
-                    <option key={i} value={i}>
-                      {i.replace('minecraft:', '')}
+                  {commonItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
                     </option>
                   ))}
                 </select>

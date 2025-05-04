@@ -23,8 +23,8 @@ const ExecuteCommand: React.FC<ExecuteCommandProps> = ({ onCommandChange }) => {
   const [scoreValue, setScoreValue] = useState('1');
 
   useEffect(() => {
-    const command = generateExecuteCommand(conditions, command);
-    onCommandChange(command);
+    const generatedCommand = generateExecuteCommand(conditions, command);
+    onCommandChange(generatedCommand);
   }, [conditions, command, onCommandChange]);
 
   const handleAddCondition = () => {

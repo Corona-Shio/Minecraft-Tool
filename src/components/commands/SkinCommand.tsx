@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import SelectorInput from '../SelectorInput';
 import { characterList, SKIN_IP_ADDRESS } from '../../data/commandOptions';
 
 interface SkinCommandProps {
@@ -7,22 +6,18 @@ interface SkinCommandProps {
 }
 
 const SkinCommand: React.FC<SkinCommandProps> = ({ onCommandChange }) => {
-  const [target, setTarget] = useState('@p');
-  const [character, setCharacter] = useState(characterList[0].id);
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    onCommandChange("/skin clear");
+  }, [onCommandChange]);
 
   const filteredCharacters = characterList.filter(char => {
     const searchLower = searchQuery.toLowerCase();
     return char.name.toLowerCase().includes(searchLower) || 
            char.id.toLowerCase().includes(searchLower);
   });
-
-  useEffect(() => {
-    // const command = `/skin set http://${SKIN_IP_ADDRESS}/${character}.png`;
-    const command = "/skin clear";
-    onCommandChange(command);
-  }, [target, character, onCommandChange]);
 
   const handleCopy = (charId: string) => {
     const command = `/skin set http://${SKIN_IP_ADDRESS}/${charId}.png`;
@@ -33,7 +28,6 @@ const SkinCommand: React.FC<SkinCommandProps> = ({ onCommandChange }) => {
 
   return (
     <div className="space-y-4">
-
       <div className="space-y-2">
         <label className="text-sm font-medium text-stone-300">
           Search Character

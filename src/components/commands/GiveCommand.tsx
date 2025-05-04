@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { generateGiveCommand } from '../../utils/commandGenerators';
 import SelectorInput from '../SelectorInput';
 import { commonItems } from '../../data/commandOptions';
@@ -16,36 +16,37 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
   const [isCustomItem, setIsCustomItem] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredItems = commonItems.filter(item => {
+  const filteredItems = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
-    return item.name.toLowerCase().includes(searchLower) || 
-           item.id.toLowerCase().includes(searchLower);
-  }).sort((a, b) => {
-    const searchLower = searchTerm.toLowerCase();
-    const aName = a.name.toLowerCase();
-    const bName = b.name.toLowerCase();
-    const aId = a.id.toLowerCase();
-    const bId = b.id.toLowerCase();
+    return commonItems
+      .filter(item => {
+        return item.name.toLowerCase().includes(searchLower) || 
+               item.id.toLowerCase().includes(searchLower);
+      })
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aId = a.id.toLowerCase();
+        const bId = b.id.toLowerCase();
 
-    // 前方一致を優先
-    const aStartsWith = aName.startsWith(searchLower) || aId.startsWith(searchLower);
-    const bStartsWith = bName.startsWith(searchLower) || bId.startsWith(searchLower);
+        // 前方一致を優先
+        const aStartsWith = aName.startsWith(searchLower) || aId.startsWith(searchLower);
+        const bStartsWith = bName.startsWith(searchLower) || bId.startsWith(searchLower);
 
-    if (aStartsWith && !bStartsWith) return -1;
-    if (!aStartsWith && bStartsWith) return 1;
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
 
-    // 前方一致以外は元の順序を維持
-    const aIndex = commonItems.findIndex(item => item.id === a.id);
-    const bIndex = commonItems.findIndex(item => item.id === b.id);
-    return aIndex - bIndex;
-  });
+        // 前方一致以外は元の順序を維持
+        return commonItems.indexOf(a) - commonItems.indexOf(b);
+      });
+  }, [searchTerm]);
 
   useEffect(() => {
     const selectedItem = isCustomItem ? customItem : item;
-    if (selectedItem) {
-      const command = generateGiveCommand(target, selectedItem, count, nbt);
-      onCommandChange(command);
-    }
+    if (!selectedItem) return;
+    
+    const command = generateGiveCommand(target, selectedItem, count, nbt);
+    onCommandChange(command);
   }, [target, item, customItem, isCustomItem, count, nbt, onCommandChange]);
 
   return (

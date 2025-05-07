@@ -42,6 +42,12 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
   }, [searchTerm]);
 
   useEffect(() => {
+    if (filteredItems.length > 0) {
+      setItem(filteredItems[0].id);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
     const selectedItem = isCustomItem ? customItem : item;
     if (!selectedItem) return;
     

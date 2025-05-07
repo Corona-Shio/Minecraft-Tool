@@ -43,6 +43,12 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
   };
 
   useEffect(() => {
+    if (filteredParticles.length > 0) {
+      setParticle(filteredParticles[0].id);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
     const selectedParticle = isCustomParticle ? customParticle : particle;
     if (selectedParticle) {
       const command = generateParticleCommand(

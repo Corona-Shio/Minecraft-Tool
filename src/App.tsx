@@ -117,12 +117,12 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 md:p-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="lg:w-1/4 space-y-6">
+      <main className="container mx-auto p-4 md:p-6 max-w-screen-lg">
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="md:w-1/4 space-y-6">
             <div className="bg-stone-800 rounded-lg border border-stone-700 p-4 shadow-lg">
               <h2 className="text-xl font-minecraft mb-4 text-stone-200">Command Type</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-1 gap-2">
                 {commandOptions.map((option: CommandOption) => (
                   <button
                     key={option.value}

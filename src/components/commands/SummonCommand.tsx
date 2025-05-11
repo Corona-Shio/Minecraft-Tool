@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { generateSummonCommand } from "../../utils/commandGenerators";
 import PositionInput from "../PositionInput";
 import { entityTypes } from "../../data/commandOptions";
@@ -143,6 +143,12 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
     y: "~",
     z: "~",
   });
+  // SummonCommandに追加する部分
+
+  // searchQueryステートを追加
+  const [searchQuery, setSearchQuery] = useState("");
+
+
 
   // --- MODIFIED ---
   // Initialize nbt state with NoAI and PersistenceRequired enabled by default
@@ -183,6 +189,20 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
     }
   };
 
+  // フィルタリングされたエンティティリストを作成
+  const filteredEntities = useMemo(() => {
+    if (!searchQuery.trim()) return entityTypes;
+    return entityTypes.filter(e => 
+      e.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [entityTypes, searchQuery]);
+
+  useEffect(() => {
+    if (filteredEntities.length > 0) {
+      setEntity(filteredEntities[0]);
+    }
+  }, [searchQuery]);
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -190,32 +210,36 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
         <div className="flex gap-2 items-start">
           <div className="flex-1">
             {isCustomEntity ? (
-              <input
-                type="text"
-                value={customEntity}
-                onChange={(e) => setCustomEntity(e.target.value)}
-                placeholder="minecraft:entity_id"
-                className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-              />
+            <input type="text" value={customEntity} onChange={(e)=> setCustomEntity(e.target.value)}
+            placeholder="minecraft:entity_id"
+            className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
+            />
             ) : (
-              <select
-                value={entity}
-                onChange={(e) => setEntity(e.target.value)}
-                className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-              >
-                {entityTypes.map((e) => (
-                  <option key={e} value={e}>
+              <div className="flex gap-2 w-full">
+              <input type="text" value={searchQuery} onChange={(e)=> setSearchQuery(e.target.value)}
+              placeholder="Filter"
+              className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500
+              flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <select value={entity} onChange={(e)=> setEntity(e.target.value)}
+                  className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600
+                  focus:border-emerald-500 truncate min-h-[42px]"
+                  >
+                  {filteredEntities.map((e) => (
+                  <option key={e} value={e} className="truncate">
                     {e}
                   </option>
-                ))}
-              </select>
+                  ))}
+                </select>
+              </div>
+            </div>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setIsCustomEntity(!isCustomEntity)}
-            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap"
-          >
+          <button type="button" onClick={()=> setIsCustomEntity(!isCustomEntity)}
+            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500
+            transition-colors whitespace-nowrap"
+            >
             {isCustomEntity ? "Common Entities" : "Custom Entity"}
           </button>
         </div>

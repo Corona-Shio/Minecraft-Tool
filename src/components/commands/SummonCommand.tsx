@@ -9,13 +9,10 @@ interface SummonCommandProps {
 }
 
 // --- NBT Manipulation Utilities ---
-// (These could be moved to a separate utils file if preferred)
 
 /**
  * Parses the content of an NBT object (string between '{' and '}')
- * into a Map of key-value strings. This is a simplified parser and assumes
- * top-level key-value pairs. Values themselves can be complex (nested objects,
- * arrays, strings with commas) and are treated as opaque strings.
+ * into a Map of key-value strings.
  */
 function parseNbtContent(content: string): Map<string, string> {
   const nbtMap = new Map<string, string>();
@@ -30,35 +27,61 @@ function parseNbtContent(content: string): Map<string, string> {
     if (cursor >= len) break;
 
     // Parse key
+    let key: string;
     let keyStart = cursor;
-    while (cursor < len && content[cursor] !== ':') {
+
+    if (content[cursor] === '"') { // Quoted key
+      keyStart++; // Skip initial quote
+      cursor++;
+      let keyContentEnd = keyStart;
+      while (keyContentEnd < len) {
+        if (content[keyContentEnd] === '"' && (keyContentEnd === keyStart || content[keyContentEnd - 1] !== '\\')) { // Handle empty quoted key and unescaped closing quote
+          break;
+        }
+        keyContentEnd++;
+      }
+      if (keyContentEnd >= len || content[keyContentEnd] !== '"') break; // Malformed: unterminated quoted key
+      key = content.substring(keyStart, keyContentEnd).replace(/\\"/g, '"'); // Get content, unescape inner quotes
+      cursor = keyContentEnd + 1; // Move past the closing quote
+    } else { // Unquoted key
+      let keyContentEnd = cursor;
+      while (keyContentEnd < len && content[keyContentEnd] !== ':') {
+        keyContentEnd++;
+      }
+      if (keyContentEnd >= len) break; // Malformed NBT (e.g., "{key}")
+      key = content.substring(keyStart, keyContentEnd).trim();
+      cursor = keyContentEnd;
+    }
+
+    // Skip whitespace after key (if any) and then the colon
+    while (cursor < len && /\s/.test(content[cursor])) {
       cursor++;
     }
-    if (cursor >= len) break; // Malformed NBT (e.g., "{key}")
-    const key = content.substring(keyStart, cursor).trim();
+    if (cursor >= len || content[cursor] !== ':') break; // Malformed (missing colon after key)
     cursor++; // Skip ':'
 
     // Skip whitespace before value
     while (cursor < len && /\s/.test(content[cursor])) {
       cursor++;
     }
-    if (cursor >= len && key) { // Malformed NBT (e.g., "{key:}") - treat as empty value for this key
+    if (cursor >= len && key !== undefined && key.length > 0) { // Key with no value after colon
         nbtMap.set(key, "");
         break;
     }
-    if (cursor >=len) break;
-
+    if (cursor >=len) break; // End of content after colon for a key with no value
 
     // Parse value
     let valueStart = cursor;
     let balance = 0; // To handle nested {} and []
     let inString = false;
 
-    const valueEndSearchStart = cursor;
+    // const valueEndSearchStart = cursor; // Context if needed for complex string logic
     while (cursor < len) {
       const char = content[cursor];
+      const prevChar = cursor > valueStart ? content[cursor - 1] : null;
+
       if (inString) {
-        if (char === '"' && (cursor === valueEndSearchStart || content[cursor - 1] !== '\\')) {
+        if (char === '"' && (prevChar !== '\\' || (prevChar === '\\' && cursor > 1 && content[cursor-2] === '\\') ) ) { // Handle escaped backslash before quote
           inString = false;
         }
       } else {
@@ -68,14 +91,18 @@ function parseNbtContent(content: string): Map<string, string> {
           balance++;
         } else if (char === '}' || char === ']') {
           balance--;
+          if (balance < 0) { // End of current NBT object/array value context
+            cursor++; // Include the closing bracket/brace
+            break;
+          }
         } else if (char === ',' && balance === 0) {
-          break; 
+          break;
         }
       }
       cursor++;
     }
     const value = content.substring(valueStart, cursor).trim();
-    if (key) { // Ensure key is not empty before setting
+    if (key !== undefined && key.length > 0) {
         nbtMap.set(key, value);
     }
   }
@@ -93,9 +120,15 @@ const getNbtMapFromString = (nbtStr: string): Map<string, string> => {
 
 const getStringFromNbtMap = (nbtMap: Map<string, string>): string => {
   if (nbtMap.size === 0) {
-    return ""; // Return empty string for no NBT data (command generator should omit NBT part)
+    return "";
   }
-  const entries = Array.from(nbtMap.entries()).map(([k, v]) => `${k.trim()}:${v.trim()}`);
+  const entries = Array.from(nbtMap.entries()).map(([k, v]) => {
+    const key = k.trim();
+    const isSimpleKey = /^[a-zA-Z0-9_]+$/.test(key);
+    const quotedKey = isSimpleKey ? key : `"${key.replace(/"/g, '\\"')}"`;
+    const value = v.trim(); // Value should already be a valid NBT literal string
+    return `${quotedKey}:${value}`;
+  });
   return `{${entries.join(',')}}`;
 };
 
@@ -132,7 +165,12 @@ const nbtToggleConfigs: NbtToggleConfig[] = [
   { id: "nogravity", label: "NoGravity（無重力）", nbtKey: "NoGravity", nbtValue: "1b" },
   { id: "rotation", label: "Rotation（回転）", nbtKey: "Rotation", nbtValue: "[90f,0f]" },
   { id: "tags", label: "Tag:enemy", nbtKey: "Tags", nbtValue: "[enemy]" },
-  // Add more common NBT toggles here
+  {
+    id: "pehkui_scale",
+    label: "Pehkui Scale (base x2.0)",
+    nbtKey: "pehkui:scale_data_types", // Key without quotes
+    nbtValue: '{"pehkui:base":{"scale":2.0f}}' // Value as NBT object string
+  },
 ];
 
 
@@ -143,15 +181,8 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
     y: "~",
     z: "~",
   });
-  // SummonCommandに追加する部分
-
-  // searchQueryステートを追加
   const [searchQuery, setSearchQuery] = useState("");
 
-
-
-  // --- MODIFIED ---
-  // Initialize nbt state with NoAI and PersistenceRequired enabled by default
   const [nbt, setNbt] = useState(() => {
     let initialNbt = "";
     const noAiConfig = nbtToggleConfigs.find(c => c.id === "noai");
@@ -165,7 +196,6 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
     }
     return initialNbt;
   });
-  // --- END MODIFIED ---
 
   const [customEntity, setCustomEntity] = useState("");
   const [isCustomEntity, setIsCustomEntity] = useState(false);
@@ -181,27 +211,29 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
   const handleNbtToggle = (config: NbtToggleConfig) => {
     const currentValue = getNbtEntryValue(nbt, config.nbtKey);
     if (currentValue === config.nbtValue) {
-      // If current value matches, it means it's ON, so turn it OFF (remove)
       setNbt(removeNbtEntry(nbt, config.nbtKey));
     } else {
-      // If different value or not present, turn it ON (add/overwrite)
       setNbt(addNbtEntry(nbt, config.nbtKey, config.nbtValue));
     }
   };
 
-  // フィルタリングされたエンティティリストを作成
   const filteredEntities = useMemo(() => {
     if (!searchQuery.trim()) return entityTypes;
-    return entityTypes.filter(e => 
+    return entityTypes.filter(e =>
       e.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [entityTypes, searchQuery]);
+  }, [searchQuery]); // entityTypesを依存配列から削除 (通常は不変なので)
 
   useEffect(() => {
-    if (filteredEntities.length > 0) {
+    // searchQueryが変更され、filteredEntitiesが空でない場合、最初のエンティティを選択
+    // ただし、現在のentityがfilteredEntitiesに含まれていれば変更しない方がUXが良い場合も
+    if (filteredEntities.length > 0 && !filteredEntities.includes(entity)) {
       setEntity(filteredEntities[0]);
+    } else if (filteredEntities.length === 0 && entityTypes.length > 0 && !isCustomEntity) {
+      // フィルタ結果がない場合、デフォルトに戻すなど検討 (ここでは何もしないか、最初のエンティティに戻す)
+      // setEntity(entityTypes[0]); // or keep current
     }
-  }, [searchQuery]);
+  }, [filteredEntities, entity, isCustomEntity]); // entityとisCustomEntityを依存配列に追加
 
   return (
     <div className="space-y-4">
@@ -218,27 +250,26 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
               <div className="flex gap-2 w-full">
               <input type="text" value={searchQuery} onChange={(e)=> setSearchQuery(e.target.value)}
               placeholder="Filter"
-              className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500
-              flex-shrink-0"
+              className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
                 <select value={entity} onChange={(e)=> setEntity(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600
-                  focus:border-emerald-500 truncate min-h-[42px]"
+                  className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 truncate min-h-[42px]"
+                  disabled={filteredEntities.length === 0} // 選択肢がない場合は無効化
                   >
                   {filteredEntities.map((e) => (
                   <option key={e} value={e} className="truncate">
                     {e}
                   </option>
                   ))}
+                  {filteredEntities.length === 0 && <option value="" disabled>No matches</option>}
                 </select>
               </div>
             </div>
             )}
           </div>
           <button type="button" onClick={()=> setIsCustomEntity(!isCustomEntity)}
-            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500
-            transition-colors whitespace-nowrap"
+            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap"
             >
             {isCustomEntity ? "Common Entities" : "Custom Entity"}
           </button>
@@ -269,7 +300,7 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
                     : 'bg-stone-600 hover:bg-stone-500 text-stone-300 border-stone-500'
                 }`}
               >
-                {config.label} 
+                {config.label}
               </button>
             );
           })}

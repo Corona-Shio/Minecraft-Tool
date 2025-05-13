@@ -12,12 +12,10 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
   const [item, setItem] = useState(commonItems[0].id);
   const [count, setCount] = useState(1);
   const [nbt, setNbt] = useState('');
-  const [customItem, setCustomItem] = useState('');
-  const [isCustomItem, setIsCustomItem] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const filteredItems = useMemo(() => {
-    const searchLower = searchTerm.toLowerCase();
+    const searchLower = searchQuery.toLowerCase();
     return commonItems
       .filter(item => {
         return item.name.toLowerCase().includes(searchLower) || 
@@ -39,21 +37,21 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
         // 前方一致以外は元の順序を維持
         return commonItems.indexOf(a) - commonItems.indexOf(b);
       });
-  }, [searchTerm]);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (filteredItems.length > 0) {
       setItem(filteredItems[0].id);
     }
-  }, [searchTerm]);
+  }, [searchQuery]);
 
   useEffect(() => {
-    const selectedItem = isCustomItem ? customItem : item;
+    const selectedItem = item;
     if (!selectedItem) return;
     
     const command = generateGiveCommand(target, selectedItem, count, nbt);
     onCommandChange(command);
-  }, [target, item, customItem, isCustomItem, count, nbt, onCommandChange]);
+  }, [target, item, count, nbt, onCommandChange]);
 
   return (
     <div className="space-y-4">
@@ -70,20 +68,11 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
         </label>
         <div className="flex gap-2 items-start">
           <div className="flex-1 space-y-2">
-            {isCustomItem ? (
-              <input
-                type="text"
-                value={customItem}
-                onChange={(e) => setCustomItem(e.target.value)}
-                placeholder="minecraft:item_id"
-                className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-              />
-            ) : (
               <div className="flex gap-2 w-full">
                 <input
                   type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter"
                   className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 flex-shrink-0"
                 />
@@ -101,15 +90,7 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
                   </select>
                 </div>
               </div>
-            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setIsCustomItem(!isCustomItem)}
-            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap"
-          >
-            {isCustomItem ? 'Common Items' : 'Custom Item'}
-          </button>
         </div>
       </div>
 

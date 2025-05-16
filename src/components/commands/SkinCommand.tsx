@@ -20,8 +20,8 @@ const SkinCommand: React.FC<SkinCommandProps> = ({ onCommandChange }) => {
   });
 
   const handleCopy = (charId: string) => {
-    // const command = `/skin set http://${SKIN_IP_ADDRESS}/${charId}.png`;
-    const command = `/skin set http://example.com/${charId}.png`;
+    const command = `/skin set http://${SKIN_IP_ADDRESS}/${charId}.png`;
+    // const command = `/skin set http://example.com/${charId}.png`;
     navigator.clipboard.writeText(command);
     setCopiedId(charId);
     setTimeout(() => setCopiedId(null), 2000);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateEffectCommand } from '../../utils/commandGenerators';
 import SelectorInput from '../SelectorInput';
+import FilterSelect from '../FilterSelect'; // <--- FilterSelect をインポート
 import { effectTypes } from '../../data/commandOptions';
 
 interface EffectCommandProps {
@@ -14,32 +15,18 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
   const [duration, setDuration] = useState(1000000);
   const [amplifier, setAmplifier] = useState(0);
   const [hideParticles, setHideParticles] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter available effects based on the search query
-  const filteredEffects = effectTypes.filter(effectItem => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      effectItem.name.toLowerCase().includes(searchLower) ||
-      effectItem.id.toLowerCase().includes(searchLower)
-    );
-  });
-
-  // When the filter input changes, reset the selected effect to the first matching option
-  useEffect(() => {
-    if (filteredEffects.length > 0) {
-      setEffect(filteredEffects[0].id);
-    }
-  }, [searchQuery]);
-
-  // Generate and propagate the command whenever relevant state changes
   useEffect(() => {
     if (action === 'clear') {
-      const command = generateEffectCommand('clear', target, effect);
+      // clear の場合は effect が指定されていなくてもコマンド発行可能（全エフェクトクリア）
+      // ただし、UI上では何かしらのエフェクトが選択されている想定。
+      // 特定のエフェクトのみクリアする場合を考慮し、effect を渡す。
+      const command = generateEffectCommand('clear', target, effect || undefined); // effectが空文字ならundefined
       onCommandChange(command);
       return;
     }
 
+    // 'give' アクションの場合、有効なエフェクトが選択されているか確認
     if (effect) {
       const command = generateEffectCommand(
         'give',
@@ -50,6 +37,8 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
         hideParticles
       );
       onCommandChange(command);
+    } else {
+      onCommandChange(''); // 有効なエフェクトがない場合は空コマンド
     }
   }, [action, target, effect, duration, amplifier, hideParticles, onCommandChange]);
 
@@ -90,32 +79,16 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
         <SelectorInput value={target} onChange={setTarget} />
       </div>
 
-      {/* Effect filter and dropdown */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-stone-300">
-          Effect
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter"
-            className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-          />
-          <select
-            value={effect}
-            onChange={(e) => setEffect(e.target.value)}
-            className="flex-1 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-          >
-            {filteredEffects.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name} ({e.id.replace('minecraft:', '')})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* Effect filter and dropdown using FilterSelect */}
+      {/* 'clear' アクションで全てのエフェクトをクリアする場合はエフェクト選択は不要かもしれないが、
+          特定のEffectをclearする機能も持つため、常に表示する */}
+      <FilterSelect
+        items={effectTypes}
+        selectedItemId={effect}
+        onItemSelected={setEffect}
+        label="Effect"
+        searchPlaceholder="Filter effects"
+      />
 
       {/* Additional options for 'give' action */}
       {action === 'give' && (
@@ -128,7 +101,7 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
               type="number"
               min="1"
               value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value) || 1)}
+              onChange={(e) => setDuration(Math.max(1, parseInt(e.target.value) || 1))}
               className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
             />
           </div>
@@ -142,20 +115,23 @@ const EffectCommand: React.FC<EffectCommandProps> = ({ onCommandChange }) => {
               min="0"
               max="255"
               value={amplifier}
-              onChange={(e) => setAmplifier(parseInt(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                setAmplifier(Math.max(0, Math.min(255, isNaN(val) ? 0 : val)));
+              }}
               className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
             />
           </div>
 
-          <div className="flex items-center space-x-2 px-3 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded border border-stone-600 transition-colors">
+          <div className="flex items-center space-x-2 px-3 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded border border-stone-600 transition-colors cursor-pointer">
             <input
               type="checkbox"
-              id="hideParticles"
+              id="hideParticlesEffect" // IDを他のコンポーネントと重複しないように変更
               checked={hideParticles}
               onChange={(e) => setHideParticles(e.target.checked)}
               className="form-checkbox text-emerald-500 focus:ring-emerald-500"
             />
-            <label htmlFor="hideParticles" className="cursor-pointer">
+            <label htmlFor="hideParticlesEffect" className="cursor-pointer select-none">
               Hide particles
             </label>
           </div>

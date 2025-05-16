@@ -1,43 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { generateFillCommand } from '../../utils/commandGenerators';
 import PositionInput from '../PositionInput';
+import FilterSelect from '../FilterSelect';
 import { Position } from '../../types/commandTypes';
-import { commonItems } from '../../data/commandOptions';
+import { commonItems as defaultCommonItems } from '../../data/commandOptions'; // エイリアスでインポート
+
+interface BlockItem {
+  id: string;
+  name: string;
+}
 
 interface FillCommandProps {
   onCommandChange: (command: string) => void;
 }
 
+const defaultBlockId = defaultCommonItems[0].id;
+
 const FillCommand: React.FC<FillCommandProps> = ({ onCommandChange }) => {
   const [from, setFrom] = useState<Position>({ x: '~', y: '~', z: '~' });
   const [to, setTo] = useState<Position>({ x: '~10', y: '~10', z: '~10' });
-  const [block, setBlock] = useState(commonItems[0].id);
+  // block state は選択されたブロックのID文字列を保持する
+  const [block, setBlock] = useState<string>(defaultBlockId);
   const [mode, setMode] = useState('replace');
-  const [filter, setFilter] = useState('');
+  // filter state は選択されたフィルターブロックのID文字列を保持する (空文字はフィルターなし)
+  const [filter, setFilter] = useState<string>('');
   const [customBlock, setCustomBlock] = useState('');
   const [isCustomBlock, setIsCustomBlock] = useState(false);
   const [customFilter, setCustomFilter] = useState('');
   const [isCustomFilter, setIsCustomFilter] = useState(false);
 
+  // フィルターブロック選択用のアイテムリスト (「フィルターなし」オプションを追加)
+  const filterableItemsForFilterBlock: BlockItem[] = useMemo(() => {
+    return [{ id: '', name: 'No filter (or select a block)' }, ...defaultCommonItems];  
+  }, []);
+
+
   useEffect(() => {
-    const selectedBlock = isCustomBlock ? customBlock : block;
-    const selectedFilter = isCustomFilter ? customFilter : filter;
-    
-    if (selectedBlock) {
-      const command = generateFillCommand(from, to, selectedBlock, mode, selectedFilter);
+    const selectedBlockId = isCustomBlock ? customBlock : block;
+    // modeがreplaceでない場合、またはfilterが空文字の場合は、selectedFilterIdはundefinedとしてコマンド生成関数に渡す
+    const selectedFilterId = mode === 'replace'
+      ? (isCustomFilter ? customFilter : (filter === '' ? undefined : filter))
+      : undefined;
+
+    if (selectedBlockId) { // selectedBlockIdが空でないことを確認
+      const command = generateFillCommand(from, to, selectedBlockId, mode, selectedFilterId);
       onCommandChange(command);
+    } else {
+      onCommandChange(''); // 有効なブロックがない場合は空コマンド
     }
   }, [from, to, block, customBlock, isCustomBlock, mode, filter, customFilter, isCustomFilter, onCommandChange]);
 
   return (
     <div className="space-y-4">
-      <PositionInput 
+      <PositionInput
         position={from}
         onChange={setFrom}
         label="From Position"
       />
 
-      <PositionInput 
+      <PositionInput
         position={to}
         onChange={setTo}
         label="To Position"
@@ -54,31 +75,32 @@ const FillCommand: React.FC<FillCommandProps> = ({ onCommandChange }) => {
                 type="text"
                 value={customBlock}
                 onChange={(e) => setCustomBlock(e.target.value)}
-                placeholder="minecraft:block_id"
+                placeholder="minecraft:block_id[state=value]"
                 className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
               />
             ) : (
-              <select
-                value={block}
-                onChange={(e) => setBlock(e.target.value)}
-                className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-              >
-                {commonItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+              <FilterSelect
+                items={defaultCommonItems}
+                selectedItemId={block}
+                onItemSelected={setBlock}
+                searchPlaceholder="Filter blocks"
+                itemDisplayFormatter={(item) => item.name}
+              />
             )}
           </div>
           <button
             type="button"
             onClick={() => setIsCustomBlock(!isCustomBlock)}
-            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap"
+            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap min-h-[42px]"
           >
             {isCustomBlock ? 'Common Blocks' : 'Custom Block'}
           </button>
         </div>
+        {isCustomBlock && (
+             <p className="text-xs text-stone-400">
+                You can include block states like <code>minecraft:oak_stairs[facing=east,half=bottom]</code>.
+            </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -114,24 +136,19 @@ const FillCommand: React.FC<FillCommandProps> = ({ onCommandChange }) => {
                   className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
                 />
               ) : (
-                <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
-                >
-                  <option value="">No filter</option>
-                  {commonItems.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                <FilterSelect
+                  items={filterableItemsForFilterBlock}
+                  selectedItemId={filter}
+                  onItemSelected={setFilter}
+                  searchPlaceholder="Filter blocks"
+                  itemDisplayFormatter={(item) => item.name}
+                />
               )}
             </div>
             <button
               type="button"
               onClick={() => setIsCustomFilter(!isCustomFilter)}
-              className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap"
+              className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap min-h-[42px]"
             >
               {isCustomFilter ? 'Common Blocks' : 'Custom Block'}
             </button>

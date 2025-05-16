@@ -1903,7 +1903,7 @@ export const particleTypes = [
 ];
 
 export const blockStates = [
+  'replace',
   'destroy',
-  'keep',
-  'replace'
+  'keep'
 ];

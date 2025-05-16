@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { generateParticleCommand } from '../../utils/commandGenerators';
 import PositionInput from '../PositionInput';
 import SelectorInput from '../SelectorInput';
+import FilterSelect from '../FilterSelect'; // <--- インポート
 import { Position } from '../../types/commandTypes';
 import { particleTypes } from '../../data/commandOptions';
 
@@ -10,7 +11,7 @@ interface ParticleCommandProps {
 }
 
 const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) => {
-  const [particle, setParticle] = useState(particleTypes[0].id);
+  const [particle, setParticle] = useState(particleTypes.length > 0 ? particleTypes[0].id : ''); // 初期値を設定
   const [position, setPosition] = useState<Position>({ x: '~', y: '~', z: '~' });
   const [delta, setDelta] = useState<Position>({ x: '0', y: '0', z: '0' });
   const [syncDelta, setSyncDelta] = useState(true);
@@ -21,13 +22,6 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
   const [showViewers, setShowViewers] = useState(false);
   const [customParticle, setCustomParticle] = useState('');
   const [isCustomParticle, setIsCustomParticle] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredParticles = particleTypes.filter(particle => {
-    const searchLower = searchQuery.toLowerCase();
-    return particle.name.toLowerCase().includes(searchLower) || 
-           particle.id.toLowerCase().includes(searchLower);
-  });
 
   const handleDeltaChange = (axis: keyof Position, value: string) => {
     const minecraftValue = (parseFloat(value) || 0) / 8;
@@ -43,16 +37,10 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
   };
 
   useEffect(() => {
-    if (filteredParticles.length > 0) {
-      setParticle(filteredParticles[0].id);
-    }
-  }, [searchQuery]);
-
-  useEffect(() => {
-    const selectedParticle = isCustomParticle ? customParticle : particle;
-    if (selectedParticle) {
+    const selectedParticleId = isCustomParticle ? customParticle : particle;
+    if (selectedParticleId) { // 空でないことを確認
       const command = generateParticleCommand(
-        selectedParticle,
+        selectedParticleId,
         position,
         delta,
         speed,
@@ -61,18 +49,20 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
         showViewers ? viewers : undefined
       );
       onCommandChange(command);
+    } else {
+      onCommandChange(''); // 有効なパーティクルがない場合は空コマンド
     }
   }, [
-    particle, 
-    customParticle, 
-    isCustomParticle, 
-    position, 
-    delta, 
-    speed, 
-    count, 
-    mode, 
-    viewers, 
-    showViewers, 
+    particle,
+    customParticle,
+    isCustomParticle,
+    position,
+    delta,
+    speed,
+    count,
+    mode,
+    viewers,
+    showViewers,
     onCommandChange
   ]);
 
@@ -93,41 +83,25 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
                 className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
               />
             ) : (
-              <div className="flex gap-2 w-full">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter"
-                  className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <select
-                    value={particle}
-                    onChange={(e) => setParticle(e.target.value)}
-                    className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 truncate min-h-[42px]"
-                  >
-                    {filteredParticles.map((p) => (
-                      <option key={p.id} value={p.id} className="truncate">
-                        {p.name} ({p.id.replace('minecraft:', '')})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <FilterSelect
+                items={particleTypes}
+                selectedItemId={particle}
+                onItemSelected={setParticle}
+                searchPlaceholder="Filter particles"
+              />
             )}
           </div>
           <button
             type="button"
             onClick={() => setIsCustomParticle(!isCustomParticle)}
-            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap"
+            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap min-h-[42px]"
           >
             {isCustomParticle ? 'Common Particles' : 'Custom Particle'}
           </button>
         </div>
       </div>
 
-      <PositionInput 
+      <PositionInput
         position={position}
         onChange={setPosition}
         label="Position"
@@ -179,8 +153,8 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
               type="button"
               onClick={() => setSyncDelta(!syncDelta)}
               className={`px-3 py-2 rounded border transition-colors whitespace-nowrap ${
-                syncDelta 
-                  ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500' 
+                syncDelta
+                  ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500'
                   : 'bg-stone-600 hover:bg-stone-500 border-stone-500'
               }`}
             >
@@ -263,9 +237,6 @@ const ParticleCommand: React.FC<ParticleCommandProps> = ({ onCommandChange }) =>
 
       {showViewers && (
         <div className="space-y-2">
-          <label className="text-sm font-medium text-stone-300">
-            Viewers
-          </label>
           <SelectorInput value={viewers} onChange={setViewers} />
         </div>
       )}

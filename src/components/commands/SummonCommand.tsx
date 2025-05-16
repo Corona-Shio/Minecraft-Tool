@@ -1,12 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { generateSummonCommand } from "../../utils/commandGenerators";
 import PositionInput from "../PositionInput";
+import FilterSelect from "../FilterSelect";
 import { entityTypes } from "../../data/commandOptions";
 import { Position } from "../../types/commandTypes";
-
-interface SummonCommandProps {
-  onCommandChange: (command: string) => void;
-}
 
 // --- NBT Manipulation Utilities ---
 
@@ -75,7 +72,6 @@ function parseNbtContent(content: string): Map<string, string> {
     let balance = 0; // To handle nested {} and []
     let inString = false;
 
-    // const valueEndSearchStart = cursor; // Context if needed for complex string logic
     while (cursor < len) {
       const char = content[cursor];
       const prevChar = cursor > valueStart ? content[cursor - 1] : null;
@@ -168,20 +164,30 @@ const nbtToggleConfigs: NbtToggleConfig[] = [
   {
     id: "pehkui_scale",
     label: "Pehkui Scale (base x2.0)",
-    nbtKey: "pehkui:scale_data_types", // Key without quotes
-    nbtValue: '{"pehkui:base":{"scale":2.0f}}' // Value as NBT object string
+    nbtKey: "pehkui:scale_data_types",
+    nbtValue: '{"pehkui:base":{"scale":2.0f}}'
   },
 ];
 
+interface SummonCommandProps {
+  onCommandChange: (command: string) => void;
+}
+
+// FilterSelectが期待する{id: string, name: string}の形式に変換
+const entityItems = entityTypes.map(entityName => ({
+  id: entityName,
+  name: entityName,
+}));
+
+const defaultEntityId = entityItems.length > 0 ? entityItems[0].id : '';
 
 const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
-  const [entity, setEntity] = useState(entityTypes[0]);
+  const [entity, setEntity] = useState<string>(defaultEntityId);
   const [position, setPosition] = useState<Position>({
     x: "~",
     y: "~",
     z: "~",
   });
-  const [searchQuery, setSearchQuery] = useState("");
 
   const [nbt, setNbt] = useState(() => {
     let initialNbt = "";
@@ -201,39 +207,23 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
   const [isCustomEntity, setIsCustomEntity] = useState(false);
 
   useEffect(() => {
-    const selectedEntity = isCustomEntity ? customEntity : entity;
-    if (selectedEntity) {
-      const command = generateSummonCommand(selectedEntity, position, nbt);
+    const selectedEntityId = isCustomEntity ? customEntity : entity;
+    if (selectedEntityId) {
+      const command = generateSummonCommand(selectedEntityId, position, nbt);
       onCommandChange(command);
+    } else {
+        onCommandChange("");
     }
   }, [entity, customEntity, isCustomEntity, position, nbt, onCommandChange]);
 
   const handleNbtToggle = (config: NbtToggleConfig) => {
     const currentValue = getNbtEntryValue(nbt, config.nbtKey);
-    if (currentValue === config.nbtValue) {
+    if (currentValue !== undefined && currentValue === config.nbtValue) {
       setNbt(removeNbtEntry(nbt, config.nbtKey));
     } else {
       setNbt(addNbtEntry(nbt, config.nbtKey, config.nbtValue));
     }
   };
-
-  const filteredEntities = useMemo(() => {
-    if (!searchQuery.trim()) return entityTypes;
-    return entityTypes.filter(e =>
-      e.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]); // entityTypesを依存配列から削除 (通常は不変なので)
-
-  useEffect(() => {
-    // searchQueryが変更され、filteredEntitiesが空でない場合、最初のエンティティを選択
-    // ただし、現在のentityがfilteredEntitiesに含まれていれば変更しない方がUXが良い場合も
-    if (filteredEntities.length > 0 && !filteredEntities.includes(entity)) {
-      setEntity(filteredEntities[0]);
-    } else if (filteredEntities.length === 0 && entityTypes.length > 0 && !isCustomEntity) {
-      // フィルタ結果がない場合、デフォルトに戻すなど検討 (ここでは何もしないか、最初のエンティティに戻す)
-      // setEntity(entityTypes[0]); // or keep current
-    }
-  }, [filteredEntities, entity, isCustomEntity]); // entityとisCustomEntityを依存配列に追加
 
   return (
     <div className="space-y-4">
@@ -247,29 +237,17 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
             className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
             />
             ) : (
-              <div className="flex gap-2 w-full">
-              <input type="text" value={searchQuery} onChange={(e)=> setSearchQuery(e.target.value)}
-              placeholder="Filter"
-              className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 flex-shrink-0"
+              <FilterSelect
+                items={entityItems}
+                selectedItemId={entity}
+                onItemSelected={setEntity}
+                searchPlaceholder="Filter entities"
+                itemDisplayFormatter={(item) => item.id}
               />
-              <div className="flex-1 min-w-0">
-                <select value={entity} onChange={(e)=> setEntity(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 truncate min-h-[42px]"
-                  disabled={filteredEntities.length === 0} // 選択肢がない場合は無効化
-                  >
-                  {filteredEntities.map((e) => (
-                  <option key={e} value={e} className="truncate">
-                    {e}
-                  </option>
-                  ))}
-                  {filteredEntities.length === 0 && <option value="" disabled>No matches</option>}
-                </select>
-              </div>
-            </div>
             )}
           </div>
           <button type="button" onClick={()=> setIsCustomEntity(!isCustomEntity)}
-            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap"
+            className="px-3 py-2 bg-stone-600 hover:bg-stone-500 text-white rounded border border-stone-500 transition-colors whitespace-nowrap min-h-[42px]"
             >
             {isCustomEntity ? "Common Entities" : "Custom Entity"}
           </button>
@@ -311,6 +289,10 @@ const SummonCommand: React.FC<SummonCommandProps> = ({ onCommandChange }) => {
           placeholder='{NoAI:1b,CustomName:"\"My Mob\""}'
           className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 font-mono text-sm h-20"
         />
+         <p className="text-xs text-stone-400">
+            NBT toggles modify the text area. You can also edit it directly.
+            Complex values like lists or nested objects should be entered carefully.
+          </p>
       </div>
     </div>
   );

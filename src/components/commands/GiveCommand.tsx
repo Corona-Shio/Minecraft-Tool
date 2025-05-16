@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateGiveCommand } from '../../utils/commandGenerators';
 import SelectorInput from '../SelectorInput';
+import FilterSelect from '../FilterSelect';
 import { commonItems } from '../../data/commandOptions';
 
 interface GiveCommandProps {
@@ -9,46 +10,17 @@ interface GiveCommandProps {
 
 const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
   const [target, setTarget] = useState('@p');
-  const [item, setItem] = useState(commonItems[0].id);
+  const [item, setItem] = useState(commonItems[0].id); // 初期値を設定
   const [count, setCount] = useState(1);
   const [nbt, setNbt] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const filteredItems = useMemo(() => {
-    const searchLower = searchQuery.toLowerCase();
-    return commonItems
-      .filter(item => {
-        return item.name.toLowerCase().includes(searchLower) || 
-               item.id.toLowerCase().includes(searchLower);
-      })
-      .sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        const aId = a.id.toLowerCase();
-        const bId = b.id.toLowerCase();
-
-        // 前方一致を優先
-        const aStartsWith = aName.startsWith(searchLower) || aId.startsWith(searchLower);
-        const bStartsWith = bName.startsWith(searchLower) || bId.startsWith(searchLower);
-
-        if (aStartsWith && !bStartsWith) return -1;
-        if (!aStartsWith && bStartsWith) return 1;
-
-        // 前方一致以外は元の順序を維持
-        return commonItems.indexOf(a) - commonItems.indexOf(b);
-      });
-  }, [searchQuery]);
-
-  useEffect(() => {
-    if (filteredItems.length > 0) {
-      setItem(filteredItems[0].id);
-    }
-  }, [searchQuery]);
 
   useEffect(() => {
     const selectedItem = item;
-    if (!selectedItem) return;
-    
+    if (!selectedItem) {
+      onCommandChange('');
+      return;
+    }
+
     const command = generateGiveCommand(target, selectedItem, count, nbt);
     onCommandChange(command);
   }, [target, item, count, nbt, onCommandChange]);
@@ -62,37 +34,13 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
         <SelectorInput value={target} onChange={setTarget} />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-stone-300">
-          Item
-        </label>
-        <div className="flex gap-2 items-start">
-          <div className="flex-1 space-y-2">
-              <div className="flex gap-2 w-full">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter"
-                  className="w-32 px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <select
-                    value={item}
-                    onChange={(e) => setItem(e.target.value)}
-                    className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500 truncate min-h-[42px]"
-                  >
-                    {filteredItems.map((item) => (
-                      <option key={item.id} value={item.id} className="truncate">
-                        {item.name} ({item.id.replace('minecraft:', '')})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-          </div>
-        </div>
-      </div>
+      <FilterSelect
+        items={commonItems}
+        selectedItemId={item}
+        onItemSelected={setItem}
+        label="Item"
+        searchPlaceholder="Filter items"
+      />
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-stone-300">
@@ -101,9 +49,8 @@ const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
         <input
           type="number"
           min="1"
-          max="64"
           value={count}
-          onChange={(e) => setCount(parseInt(e.target.value) || 1)}
+          onChange={(e) => setCount(Math.max(1, parseInt(e.target.value) || 1))} // 0以下にならないように
           className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-emerald-500"
         />
       </div>

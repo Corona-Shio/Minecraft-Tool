@@ -15,16 +15,16 @@ export type SelectorOptions = {
 };
 
 export type CommandType = 
-  | 'give' 
+  | 'skin'
   | 'effect' 
+  | 'particle' 
+  | 'give' 
   | 'summon' 
   | 'tp' 
   | 'teleport' 
   | 'setblock' 
-  | 'particle' 
-  | 'execute' 
   | 'fill'
-  | 'skin';
+  | 'execute' ;
 
 export interface CommandOption {
   name: string;

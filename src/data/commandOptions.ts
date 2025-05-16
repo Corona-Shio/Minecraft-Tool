@@ -89,16 +89,16 @@ export const commandOptions: CommandOption[] = [
     icon: 'Square'
   },
   {
-    name: 'Execute',
-    value: 'execute',
-    description: 'Execute commands with conditions',
-    icon: 'Terminal'
-  },
-  {
     name: 'Fill',
     value: 'fill',
     description: 'Fill an area with blocks',
     icon: 'Boxes'
+  },
+  {
+    name: 'Execute',
+    value: 'execute',
+    description: 'Execute commands with conditions',
+    icon: 'Terminal'
   },
 ];
 

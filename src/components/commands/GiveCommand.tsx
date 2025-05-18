@@ -2,17 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { generateGiveCommand } from '../../utils/commandGenerators';
 import SelectorInput from '../SelectorInput';
 import FilterSelect from '../FilterSelect';
-import { commonItems } from '../../data/commandOptions';
+import FetchAppSheet from '../../api/FetchAppSheet';
 
 interface GiveCommandProps {
   onCommandChange: (command: string) => void;
 }
 
 const GiveCommand: React.FC<GiveCommandProps> = ({ onCommandChange }) => {
+  const [commonItems, setCommonItems] = useState<{ id: string; name: string }[]>([]);
   const [target, setTarget] = useState('@p');
-  const [item, setItem] = useState(commonItems[0].id); // 初期値を設定
+  const [item, setItem] = useState('');
   const [count, setCount] = useState(1);
   const [nbt, setNbt] = useState('');
+
+  useEffect(() => {
+    // データを非同期で取得
+    FetchAppSheet("Items")
+      .then((data) => {
+        const filteredRows = data.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+        }));
+        setCommonItems(filteredRows)
+        setItem(filteredRows[0].id)
+      })
+      .catch((error) => {
+        console.error("データの取得に失敗しました:", error);
+      });
+  }, []);
 
   useEffect(() => {
     const selectedItem = item;
